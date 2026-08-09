@@ -32,6 +32,13 @@ Security properties:
   revisions, providing flash-proof resistance;
 - historical conflicts remain queryable after recovery.
 
+## Live proof
+
+A live 2-row × 4-axis matrix has three consecutive finalized `PROVEN`
+revisions. The stored state contains eight `PASS` cells, eight `OK` sources and
+four independence groups per row for every revision; the durability gate for
+three revisions returns `true`. See [LIVE_PROOF.md](LIVE_PROOF.md).
+
 ## Validation
 
 ```bash

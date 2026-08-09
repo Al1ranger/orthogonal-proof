@@ -42,12 +42,15 @@ async function write(functionName: string, args: any[]) {
     explorer: `https://explorer-studio.genlayer.com/tx/${hash}` };
 }
 
-const policyTx = await write("register_policy", [policyId, "Durable agent identity and capability matrix",
-  JSON.stringify(rows), JSON.stringify(axes)]);
-const subjectTx = await write("register_subject", [subjectId, policyId,
-  "agent://matrix-agent-7/analyze-v2", JSON.stringify(cells)]);
+const policyTx = process.env.RESUME_SETUP === "1" ? { resumed: true } :
+  await write("register_policy", [policyId, "Durable agent identity and capability matrix",
+    JSON.stringify(rows), JSON.stringify(axes)]);
+const subjectTx = process.env.RESUME_SETUP === "1" ? { resumed: true } :
+  await write("register_subject", [subjectId, policyId,
+    "agent://matrix-agent-7/analyze-v2", JSON.stringify(cells)]);
 const revisions = [];
-for (let revision = 1; revision <= 3; revision++) {
+const startRevision = Number(process.env.START_REVISION ?? 1);
+for (let revision = startRevision; revision <= 3; revision++) {
   const transaction = await write("evaluate", [subjectId]);
   const matrix = await client.readContract({ address, functionName: "get_matrix", args: [subjectId, revision] });
   revisions.push({ revision, transaction, matrix });
