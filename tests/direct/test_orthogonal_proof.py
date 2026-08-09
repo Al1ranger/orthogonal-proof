@@ -61,6 +61,10 @@ def test_proven_matrix_binds_cells_rows_and_sources(direct_vm, direct_deploy):
     assert matrix.source_statuses_json == '["OK","OK","OK","OK"]'
     assert matrix.conflicts_json == "[]"
     assert matrix.matrix_state == "PROVEN"
+    assert matrix.group_coverage_json == '[["publisher","runtime"],["publisher","external"]]'
+    assert contract.get_cell_state("agent-7", 1, 0, 1) == "PASS"
+    assert contract.get_row_status("agent-7", 1, 1) == "PROVEN"
+    assert contract.get_fingerprint("agent-7") == matrix.matrix_fingerprint
     assert contract.is_proven("agent-7") is True
     assert contract.is_durably_proven("agent-7", 2) is False
 

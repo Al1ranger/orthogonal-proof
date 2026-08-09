@@ -11,5 +11,5 @@ OrthogonalProof is a reusable GenLayer primitive for claims that require indepen
 ## Evidence
 
 - Repository: https://github.com/Al1ranger/orthogonal-proof
-- Contract: https://explorer-studio.genlayer.com/address/0x51C1a30bc5AB6c4Aa6aC46D7ad06967E8b72f537
-- Deployment: https://explorer-studio.genlayer.com/tx/0xbb61b46ec2bd86f91eebd32fa99cf23de5c2d34a5f6dac9899846a56d1533676
+- Contract: https://explorer-studio.genlayer.com/address/0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23
+- Deployment: https://explorer-studio.genlayer.com/tx/0x2e62751eec903a5b0fd5d24f72811127ad3ec766b055965e5eaf1db6f0a27a27

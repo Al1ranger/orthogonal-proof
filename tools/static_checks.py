@@ -12,7 +12,7 @@ def require(value: bool, message: str) -> None:
 require(source.startswith('# { "Depends": "py-genlayer:'), "runner is not pinned")
 require("run_nondet_unsafe" in source, "custom validator missing")
 for field in ("cell_states_json", "row_states_json", "conflicts_json", "source_statuses_json",
-              "evidence_fingerprint", "matrix_state", "matrix_fingerprint"):
+              "evidence_fingerprint", "matrix_state", "matrix_fingerprint", "group_coverage_json"):
     require(f'leader["{field}"] == validator["{field}"]' in source, f"unbound field: {field}")
 require("explanation:" not in source and "summary:" not in source, "free-form state forbidden")
 require("is_durably_proven" in source, "temporal durability gate missing")

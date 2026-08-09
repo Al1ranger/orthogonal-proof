@@ -17,10 +17,10 @@ matrix state, and matrix fingerprint. Agreement on `PROVEN` alone is insufficien
 
 ## StudioNet
 
-- Contract: [`0x51C1a30bc5AB6c4Aa6aC46D7ad06967E8b72f537`](https://explorer-studio.genlayer.com/address/0x51C1a30bc5AB6c4Aa6aC46D7ad06967E8b72f537)
-- Deployment: [`0xbb61b4...533676`](https://explorer-studio.genlayer.com/tx/0xbb61b46ec2bd86f91eebd32fa99cf23de5c2d34a5f6dac9899846a56d1533676)
+- Contract: [`0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23`](https://explorer-studio.genlayer.com/address/0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23)
+- Deployment: [`0x2e6275...a27a27`](https://explorer-studio.genlayer.com/tx/0x2e62751eec903a5b0fd5d24f72811127ad3ec766b055965e5eaf1db6f0a27a27)
 - Result: `FINALIZED / MAJORITY_AGREE`
-- Verified source SHA-256: `29ec702e650b0a9e3593456a624ed2b6d69d9bdc5982638a8496c71a3eb30fa6`
+- Verified source SHA-256: `c61a55fa21379dca050ede6d9beaf42faacd76916fd2ebdf48977e835d2a6e46`
 
 Security properties:
 

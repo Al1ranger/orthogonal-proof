@@ -62,6 +62,7 @@ class MatrixRevision:
     evidence_fingerprint: str
     matrix_state: str
     matrix_fingerprint: str
+    group_coverage_json: str
 
 
 class OrthogonalProof(gl.Contract):
@@ -181,6 +182,7 @@ class OrthogonalProof(gl.Contract):
             evidence_fingerprint=matrix["evidence_fingerprint"],
             matrix_state=matrix["matrix_state"],
             matrix_fingerprint=matrix["matrix_fingerprint"],
+            group_coverage_json=matrix["group_coverage_json"],
         )
         self.revision_exists[key] = True
         subject.latest_revision = revision
@@ -240,6 +242,30 @@ class OrthogonalProof(gl.Contract):
     @gl.public.view
     def has_historical_conflict(self, subject_id: str) -> bool:
         return self._subject(self._id(subject_id, "subject")).ever_contested
+
+    @gl.public.view
+    def get_cell_state(self, subject_id: str, revision: u32, row_index: u32, axis_index: u32) -> str:
+        matrix = self.get_matrix(subject_id, revision)
+        subject = self._subject(self._id(subject_id, "subject"))
+        policy = self._policy(subject.policy_id)
+        axes = json.loads(policy.axes_json)
+        rows = json.loads(policy.rows_json)
+        if int(row_index) >= len(rows) or int(axis_index) >= len(axes):
+            raise gl.vm.UserError("EXPECTED: cell index is out of range")
+        states = json.loads(matrix.cell_states_json)
+        return states[int(row_index) * len(axes) + int(axis_index)]
+
+    @gl.public.view
+    def get_row_status(self, subject_id: str, revision: u32, row_index: u32) -> str:
+        matrix = self.get_matrix(subject_id, revision)
+        states = json.loads(matrix.row_states_json)
+        if int(row_index) >= len(states):
+            raise gl.vm.UserError("EXPECTED: row index is out of range")
+        return states[int(row_index)]
+
+    @gl.public.view
+    def get_fingerprint(self, subject_id: str) -> str:
+        return self.get_latest(subject_id).matrix_fingerprint
 
     @gl.public.view
     def counts(self) -> str:
@@ -428,6 +454,7 @@ Cells: {subject.cells_json}
             if state == CELL_FAIL:
                 conflicts.append(index)
         row_states = []
+        group_coverage = []
         for row_index, row in enumerate(rows):
             required_states = []
             groups = []
@@ -448,6 +475,7 @@ Cells: {subject.cells_json}
             else:
                 row_state = STATE_PROVEN
             row_states.append(row_state)
+            group_coverage.append(groups)
         if STATE_CONTESTED in row_states:
             matrix_state = STATE_CONTESTED
         elif all(value == STATE_PROVEN for value in row_states):
@@ -457,12 +485,13 @@ Cells: {subject.cells_json}
         state_json = json.dumps(states, separators=(",", ":"))
         rows_state_json = json.dumps(row_states, separators=(",", ":"))
         conflicts_json = json.dumps(conflicts, separators=(",", ":"))
+        group_coverage_json = json.dumps(group_coverage, separators=(",", ":"))
         basis = f"{policy_id}|{subject_reference}|{revision}|{cells_json}|{state_json}|{evidence_fingerprint}"
         matrix_fingerprint = f"len={len(basis)};head={basis[:64]};tail={basis[-64:]}"
         return {"cell_states_json": state_json, "row_states_json": rows_state_json,
             "conflicts_json": conflicts_json, "source_statuses_json": statuses_json,
             "evidence_fingerprint": evidence_fingerprint, "matrix_state": matrix_state,
-            "matrix_fingerprint": matrix_fingerprint}
+            "matrix_fingerprint": matrix_fingerprint, "group_coverage_json": group_coverage_json}
 
     def _valid_matrix(self, matrix) -> bool:
         return (isinstance(matrix, dict)
@@ -474,7 +503,8 @@ Cells: {subject.cells_json}
             and len(matrix.get("evidence_fingerprint", "")) > 0
             and matrix.get("matrix_state", "") in (STATE_PROVEN, STATE_CONTESTED, STATE_INSUFFICIENT)
             and isinstance(matrix.get("matrix_fingerprint", None), str)
-            and len(matrix.get("matrix_fingerprint", "")) > 0)
+            and len(matrix.get("matrix_fingerprint", "")) > 0
+            and isinstance(matrix.get("group_coverage_json", None), str))
 
     def _matrices_identical(self, leader, validator) -> bool:
         return (leader["cell_states_json"] == validator["cell_states_json"]
@@ -483,4 +513,5 @@ Cells: {subject.cells_json}
             and leader["source_statuses_json"] == validator["source_statuses_json"]
             and leader["evidence_fingerprint"] == validator["evidence_fingerprint"]
             and leader["matrix_state"] == validator["matrix_state"]
-            and leader["matrix_fingerprint"] == validator["matrix_fingerprint"])
+            and leader["matrix_fingerprint"] == validator["matrix_fingerprint"]
+            and leader["group_coverage_json"] == validator["group_coverage_json"])
