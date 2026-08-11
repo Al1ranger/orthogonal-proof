@@ -1,10 +1,9 @@
-# Deployment Evidence
+# Corrected Deployment Evidence
 
-- Contract: https://explorer-studio.genlayer.com/address/0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23
-- Deployment: https://explorer-studio.genlayer.com/tx/0x2e62751eec903a5b0fd5d24f72811127ad3ec766b055965e5eaf1db6f0a27a27
-- Status: `FINALIZED`
-- Consensus: `MAJORITY_AGREE`
-- Exact local/on-chain source SHA-256: `c61a55fa21379dca050ede6d9beaf42faacd76916fd2ebdf48977e835d2a6e46`
+- Contract: https://explorer-studio.genlayer.com/address/0xbdC373dB7E9B03E33453A7F79a90C8bcD182605f
+- Deployment: https://explorer-studio.genlayer.com/tx/0x82066cf7edf2c42b40a54c33eb439b033b820ba55ec1233cc34d2f122f2e7d8c
+- Status: `FINALIZED / MAJORITY_AGREE`
+- Exact local/on-chain source SHA-256: `e046598d77aca19233d9ccb82becb1ec4c65c740a30f3e7d22226ed5be0c014a`
 
-GenVM lint and schema validation, eight direct tests, static consensus-binding
-checks, TypeScript type checking, and exact deployed-source verification pass.
+GenVM lint and schema validation, ten direct tests, contract-source discovery,
+TypeScript checking, and exact deployed-source verification pass.

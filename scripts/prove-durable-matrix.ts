@@ -2,32 +2,30 @@ import { createAccount, createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import { TransactionStatus } from "genlayer-js/types";
 
-const address = "0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23" as `0x${string}`;
-const evidenceCommit = process.env.EVIDENCE_COMMIT;
-if (!evidenceCommit) throw new Error("Set EVIDENCE_COMMIT.");
+const address = process.env.CONTRACT_ADDRESS as `0x${string}` | undefined;
+if (!address) throw new Error("Set CONTRACT_ADDRESS.");
+const contractAddress = address;
 const suffix = process.env.PROOF_SUFFIX ?? String(Date.now());
 const account = createAccount();
 const client = createClient({ chain: studionet, account });
-const policyId = `agent-orthogonal-v2-${suffix}`;
-const subjectId = `matrix-agent-7-${suffix}`;
-const axes = ["ORIGIN", "DIRECT", "INDEPENDENT", "TEMPORAL"];
+const policyId = `http-status-orthogonal-v3-${suffix}`;
+const subjectId = `http-200-ok-${suffix}`;
+const axes = ["ORIGIN", "DIRECT", "INDEPENDENT"];
 const rows = [
-  { id: "identity", claim: "The public agent identifier is matrix-agent-7",
-    required_axes: axes, critical: true, min_independent_groups: 3 },
-  { id: "capability", claim: "The agent exposes capability analyze-v2",
+  { id: "http-200", claim: "HTTP status code 200 has the standard reason phrase OK",
     required_axes: axes, critical: true, min_independent_groups: 3 },
 ];
-const groups: Record<string, string> = {
-  ORIGIN: "publisher-domain", DIRECT: "runtime-domain",
-  INDEPENDENT: "external-registry-domain", TEMPORAL: "checkpoint-domain",
+const urls: Record<string, string> = {
+  ORIGIN: "https://www.iana.org/assignments/http-status-codes/http-status-codes-1.csv",
+  DIRECT: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/200",
+  INDEPENDENT: "https://http.dog/200.json",
 };
-const base = `https://raw.githubusercontent.com/Al1ranger/orthogonal-proof/${evidenceCommit}/evidence/agent-matrix`;
 const cells = rows.flatMap((row) => axes.map((axis) => ({
-  row: row.id, axis, group: groups[axis], url: `${base}/${row.id}-${axis.toLowerCase()}.json`,
+  row: row.id, axis, url: urls[axis],
 })));
 
 async function write(functionName: string, args: any[]) {
-  const hash = await client.writeContract({ address, functionName, args, account, value: 0n });
+  const hash = await client.writeContract({ address: contractAddress, functionName, args, account, value: 0n });
   console.log(`${functionName}=${hash}`);
   const receipt = await client.waitForTransactionReceipt({
     hash: hash as never, status: TransactionStatus.FINALIZED, interval: 5000, retries: 180,
@@ -43,20 +41,20 @@ async function write(functionName: string, args: any[]) {
 }
 
 const policyTx = process.env.RESUME_SETUP === "1" ? { resumed: true } :
-  await write("register_policy", [policyId, "Durable agent identity and capability matrix",
+  await write("register_policy", [policyId, "Durable HTTP registry fact matrix",
     JSON.stringify(rows), JSON.stringify(axes)]);
 const subjectTx = process.env.RESUME_SETUP === "1" ? { resumed: true } :
   await write("register_subject", [subjectId, policyId,
-    "agent://matrix-agent-7/analyze-v2", JSON.stringify(cells)]);
+    "urn:ietf:http:status:200", JSON.stringify(cells)]);
 const revisions = [];
 const startRevision = Number(process.env.START_REVISION ?? 1);
 for (let revision = startRevision; revision <= 3; revision++) {
   const transaction = await write("evaluate", [subjectId]);
-  const matrix = await client.readContract({ address, functionName: "get_matrix", args: [subjectId, revision] });
+  const matrix = await client.readContract({ address: contractAddress, functionName: "get_matrix", args: [subjectId, revision] });
   revisions.push({ revision, transaction, matrix });
 }
-const durable = await client.readContract({ address, functionName: "is_durably_proven", args: [subjectId, 3] });
-const subject = await client.readContract({ address, functionName: "get_subject", args: [subjectId] });
-console.log(JSON.stringify({ contractAddress: address, evidenceCommit, policyId, subjectId,
-  dimensions: "2 rows x 4 proof axes x 3 finalized revisions", policyTx, subjectTx,
+const durable = await client.readContract({ address: contractAddress, functionName: "is_durably_proven", args: [subjectId, 3] });
+const subject = await client.readContract({ address: contractAddress, functionName: "get_subject", args: [subjectId] });
+console.log(JSON.stringify({ contractAddress, policyId, subjectId,
+  dimensions: "1 row x 3 proof axes x 3 finalized revisions", policyTx, subjectTx,
   revisions, durable, subject }, null, 2));

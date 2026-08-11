@@ -63,6 +63,7 @@ class MatrixRevision:
     matrix_state: str
     matrix_fingerprint: str
     group_coverage_json: str
+    failure_domains_json: str
 
 
 class OrthogonalProof(gl.Contract):
@@ -183,6 +184,7 @@ class OrthogonalProof(gl.Contract):
             matrix_state=matrix["matrix_state"],
             matrix_fingerprint=matrix["matrix_fingerprint"],
             group_coverage_json=matrix["group_coverage_json"],
+            failure_domains_json=matrix["failure_domains_json"],
         )
         self.revision_exists[key] = True
         subject.latest_revision = revision
@@ -366,7 +368,7 @@ class OrthogonalProof(gl.Contract):
             if not url.startswith("https://"):
                 raise gl.vm.UserError("EXPECTED: cell URLs must use https")
             by_key[key] = {"row": rid, "axis": axis, "url": url,
-                "group": self._id(str(cell.get("group", "")), "independence group")}
+                "failure_domain": self._failure_domain(url)}
         ordered = []
         for row in rows:
             for axis in axes:
@@ -381,6 +383,28 @@ class OrthogonalProof(gl.Contract):
             return int(value)
         except Exception:
             return fallback
+
+    def _failure_domain(self, url: str) -> str:
+        """Derive a conservative DNS failure domain; callers cannot label it."""
+        remainder = url[8:]
+        authority = remainder.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0]
+        if "@" in authority or "[" in authority or "]" in authority:
+            raise gl.vm.UserError("EXPECTED: cell URL authority is not allowed")
+        host = authority.split(":", 1)[0].strip().lower().rstrip(".")
+        if len(host) == 0 or host == "localhost":
+            raise gl.vm.UserError("EXPECTED: invalid public cell URL host")
+        labels = host.split(".")
+        if len(labels) < 2 or any(len(label) == 0 for label in labels):
+            raise gl.vm.UserError("EXPECTED: cell URL requires a DNS host")
+        if all(label.isdigit() for label in labels):
+            raise gl.vm.UserError("EXPECTED: IP-literal cell URLs are forbidden")
+        compound_suffixes = (
+            "co.uk", "org.uk", "gov.uk", "ac.uk", "com.au", "net.au", "org.au",
+            "co.jp", "co.nz", "com.br", "com.cn", "com.sg", "com.mx", "co.in",
+        )
+        suffix = ".".join(labels[-2:])
+        take = 3 if suffix in compound_suffixes and len(labels) >= 3 else 2
+        return "dns:" + ".".join(labels[-take:])
 
     def _revision_key(self, sid: str, revision: u32) -> str:
         return f"{sid}#{revision}"
@@ -402,7 +426,7 @@ class OrthogonalProof(gl.Contract):
             statuses.append(source_state)
             compact = " ".join(body.strip().split())
             fingerprints.append(f"{index}:{status}:{len(compact)}:{compact[:40]}:{compact[-40:]}")
-            evidence_parts.append(f"CELL {index} ROW {cell['row']} AXIS {cell['axis']} GROUP {cell['group']} STATUS {status}\n{body}")
+            evidence_parts.append(f"CELL {index} ROW {cell['row']} AXIS {cell['axis']} FAILURE_DOMAIN {cell['failure_domain']} STATUS {status}\n{body}")
         return {"source_statuses_json": json.dumps(statuses, separators=(",", ":")),
             "evidence_fingerprint": "||".join(fingerprints),
             "evidence_text": "\n\n".join(evidence_parts)}
@@ -462,8 +486,8 @@ Cells: {subject.cells_json}
                 index = row_index * len(axes) + axis_index
                 if axis in row["required_axes"]:
                     required_states.append(states[index])
-                    if states[index] == CELL_PASS and cells[index]["group"] not in groups:
-                        groups.append(cells[index]["group"])
+                    if states[index] == CELL_PASS and cells[index]["failure_domain"] not in groups:
+                        groups.append(cells[index]["failure_domain"])
             if row["critical"] and CELL_FAIL in required_states:
                 row_state = STATE_CONTESTED
             elif CELL_FAIL in required_states:
@@ -486,12 +510,15 @@ Cells: {subject.cells_json}
         rows_state_json = json.dumps(row_states, separators=(",", ":"))
         conflicts_json = json.dumps(conflicts, separators=(",", ":"))
         group_coverage_json = json.dumps(group_coverage, separators=(",", ":"))
+        failure_domains_json = json.dumps(
+            [cell["failure_domain"] for cell in cells], separators=(",", ":"))
         basis = f"{policy_id}|{subject_reference}|{revision}|{cells_json}|{state_json}|{evidence_fingerprint}"
         matrix_fingerprint = f"len={len(basis)};head={basis[:64]};tail={basis[-64:]}"
         return {"cell_states_json": state_json, "row_states_json": rows_state_json,
             "conflicts_json": conflicts_json, "source_statuses_json": statuses_json,
             "evidence_fingerprint": evidence_fingerprint, "matrix_state": matrix_state,
-            "matrix_fingerprint": matrix_fingerprint, "group_coverage_json": group_coverage_json}
+            "matrix_fingerprint": matrix_fingerprint, "group_coverage_json": group_coverage_json,
+            "failure_domains_json": failure_domains_json}
 
     def _valid_matrix(self, matrix) -> bool:
         return (isinstance(matrix, dict)
@@ -504,7 +531,8 @@ Cells: {subject.cells_json}
             and matrix.get("matrix_state", "") in (STATE_PROVEN, STATE_CONTESTED, STATE_INSUFFICIENT)
             and isinstance(matrix.get("matrix_fingerprint", None), str)
             and len(matrix.get("matrix_fingerprint", "")) > 0
-            and isinstance(matrix.get("group_coverage_json", None), str))
+            and isinstance(matrix.get("group_coverage_json", None), str)
+            and isinstance(matrix.get("failure_domains_json", None), str))
 
     def _matrices_identical(self, leader, validator) -> bool:
         return (leader["cell_states_json"] == validator["cell_states_json"]
@@ -514,4 +542,5 @@ Cells: {subject.cells_json}
             and leader["evidence_fingerprint"] == validator["evidence_fingerprint"]
             and leader["matrix_state"] == validator["matrix_state"]
             and leader["matrix_fingerprint"] == validator["matrix_fingerprint"]
-            and leader["group_coverage_json"] == validator["group_coverage_json"])
+            and leader["group_coverage_json"] == validator["group_coverage_json"]
+            and leader["failure_domains_json"] == validator["failure_domains_json"])

@@ -1,50 +1,41 @@
 # OrthogonalProof
 
 OrthogonalProof is a reusable GenLayer primitive for claims that must survive a
-matrix of independent proof mechanisms rather than a majority of repeated sources.
+matrix of independent proof mechanisms rather than a majority of repeated
+sources. Policy rows are assertions; columns are audited proof axes: `ORIGIN`,
+`DIRECT`, `INDEPENDENT`, and `TEMPORAL`.
 
-Policy rows are assertions. Columns are audited proof axes: `ORIGIN`, `DIRECT`,
-`INDEPENDENT`, and `TEMPORAL`. Each row declares required axes and a minimum
-number of independence groups. Every evaluation creates an immutable matrix
-revision.
+## Consensus and independence invariant
 
-## Consensus invariant
+Callers submit HTTPS evidence URLs but cannot label their independence. The
+contract derives a conservative registrable DNS failure domain from every URL.
+Different paths and subdomains under one registrable domain count once. Every
+validator independently fetches every cell and rebuilds the complete matrix.
+Consensus requires exact equality of cell states, row states, conflicts, source
+statuses, the ordered derived-domain vector, per-row coverage, evidence and
+matrix fingerprints, and final state. Agreement on `PROVEN` alone is
+insufficient.
 
-Every validator independently fetches every configured cell source and rebuilds
-the matrix. Acceptance requires exact equality of the ordered cell-state vector,
-row-state vector, conflict set, source-status vector, evidence fingerprint,
-matrix state, and matrix fingerprint. Agreement on `PROVEN` alone is insufficient.
+Contradictions produce `CONTESTED`; `UNKNOWN` and `UNAVAILABLE` never count as
+proof. Immutable revisions and `is_durably_proven` provide flash-proof
+resistance, while historical conflicts remain queryable.
 
-## StudioNet
+## Corrected StudioNet deployment
 
-- Contract: [`0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23`](https://explorer-studio.genlayer.com/address/0x57115ADdC1b97F67c33AC7Fdbe0a775019877D23)
-- Deployment: [`0x2e6275...a27a27`](https://explorer-studio.genlayer.com/tx/0x2e62751eec903a5b0fd5d24f72811127ad3ec766b055965e5eaf1db6f0a27a27)
-- Result: `FINALIZED / MAJORITY_AGREE`
-- Verified source SHA-256: `c61a55fa21379dca050ede6d9beaf42faacd76916fd2ebdf48977e835d2a6e46`
+- Contract: [`0xbdC373dB7E9B03E33453A7F79a90C8bcD182605f`](https://explorer-studio.genlayer.com/address/0xbdC373dB7E9B03E33453A7F79a90C8bcD182605f)
+- Deployment: [`0x82066c...e7d8c`](https://explorer-studio.genlayer.com/tx/0x82066cf7edf2c42b40a54c33eb439b033b820ba55ec1233cc34d2f122f2e7d8c)
+- Source SHA-256: `e046598d77aca19233d9ccb82becb1ec4c65c740a30f3e7d22226ed5be0c014a`
 
-Security properties:
-
-- multiple hosts in one declared failure domain cannot satisfy independence;
-- any required contradiction produces `CONTESTED`, never majority success;
-- `UNKNOWN` and `UNAVAILABLE` never count as proof;
-- free-form explanations are not stored or used;
-- revisions are immutable and `is_durably_proven` requires consecutive `PROVEN`
-  revisions, providing flash-proof resistance;
-- historical conflicts remain queryable after recovery.
-
-## Live proof
-
-A live 2-row × 4-axis matrix has three consecutive finalized `PROVEN`
-revisions. The stored state contains eight `PASS` cells, eight `OK` sources and
-four independence groups per row for every revision; the durability gate for
-three revisions returns `true`. See [LIVE_PROOF.md](LIVE_PROOF.md).
+The live proof uses IANA, Mozilla MDN, and HTTP Dog. Three consecutive revisions
+store three `PASS` cells, three independently derived domains, no conflicts,
+and `PROVEN`; `is_durably_proven(subject, 3)` returns `true`. See
+[LIVE_PROOF.md](LIVE_PROOF.md) and [CORRECTION.md](CORRECTION.md).
 
 ## Validation
 
 ```bash
 genvm-lint check contracts/orthogonal_proof.py --json
 pytest tests/direct -q
-python tools/static_checks.py
-npm install
+npm run check:discovery
 npm run typecheck
 ```

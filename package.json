@@ -7,7 +7,8 @@
     "deploy:studionet": "tsx scripts/deploy-studionet.ts",
     "prove:durable": "tsx scripts/prove-durable-matrix.ts",
     "verify:deployment": "tsx scripts/verify-deployment.ts",
-    "typecheck": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "check:discovery": "tsx scripts/check-contract-discovery.ts"
   },
   "dependencies": { "genlayer-js": "1.1.8" },
   "devDependencies": {
